@@ -7,7 +7,7 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
-
+	"math/rand"
 	"github.com/DataDog/datadog-go/statsd"
 	"github.com/miekg/dns"
 )
@@ -17,6 +17,16 @@ type ResolverOptions struct {
 	MaxMessages       int
 	RequestsPerSecond int
 	Protocol          string
+}
+
+var letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+
+func randSeq(n int) string {
+    b := make([]rune, n)
+    for i := range b {
+        b[i] = letters[rand.Intn(len(letters))]
+    }
+    return string(b)
 }
 
 //TODO: Add function to test if resolver is working
@@ -130,7 +140,11 @@ func (r *Resolver) send() {
 }
 
 func (r *Resolver) exchange() error {
-	msg := new(dns.Msg).SetQuestion(r.domain, dns.TypeA)
+	rand.Seed(time.Now().UnixNano())
+        domainnew := randSeq(10) + ".com."
+	msg := new(dns.Msg).SetQuestion(domainnew, dns.TypeA)
+	// add new input for fix domain or random domain
+	// msg := new(dns.Msg).SetQuestion(r.domain, dns.TypeA)
 	conn, err := dns.Dial(r.protocol, r.server)
 	if err != nil {
 		return err
