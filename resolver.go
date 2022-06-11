@@ -44,6 +44,7 @@ type Resolver struct {
 	rps            int
 	server         string
 	domain         string
+	randomDomain   bool
 	protocol       string
 	stopChan       chan struct{}
 	statsdReporter *statsd.Client
@@ -53,7 +54,7 @@ type Resolver struct {
 	wg       sync.WaitGroup
 }
 
-func NewResolver(server string, domain string, client *statsd.Client, opts ResolverOptions) *Resolver {
+func NewResolver(server string, domain string, randomDomain bool, client *statsd.Client, opts ResolverOptions) *Resolver {
 	r := &Resolver{
 		server:         server,
 		concurrency:    opts.Concurrency,
@@ -62,6 +63,7 @@ func NewResolver(server string, domain string, client *statsd.Client, opts Resol
 		statsdReporter: client,
 		stopChan:       make(chan struct{}),
 		domain:         domain,
+		randomDomain:   randomDomain,
 		protocol:       opts.Protocol,
 	}
 
@@ -140,11 +142,16 @@ func (r *Resolver) send() {
 }
 
 func (r *Resolver) exchange() error {
-	rand.Seed(time.Now().UnixNano())
-        domainnew := randSeq(10) + ".com."
-	msg := new(dns.Msg).SetQuestion(domainnew, dns.TypeA)
-	// add new input for fix domain or random domain
-	// msg := new(dns.Msg).SetQuestion(r.domain, dns.TypeA)
+
+    var domainnew string
+    if (r.randomDomain) {
+        rand.Seed(time.Now().UnixNano())
+        domainnew = randSeq(10) + ".com."
+    } else {
+        domainnew = r.domain
+    }
+
+    msg := new(dns.Msg).SetQuestion(domainnew, dns.TypeA)
 	conn, err := dns.Dial(r.protocol, r.server)
 	if err != nil {
 		return err

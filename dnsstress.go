@@ -19,6 +19,7 @@ var (
 	maxMessages int
 	resolver    string
 	runForever  bool
+	randomDomain bool
 	reqPerSec   int
 	protocol    string
 )
@@ -36,6 +37,8 @@ func init() {
 		"Protocol to use")
 	flag.BoolVar(&runForever, "inf", false,
 		"Run Forever")
+	flag.BoolVar(&randomDomain, "random", false,
+		"Random Domain")
 }
 
 func main() {
@@ -94,7 +97,11 @@ func main() {
 		log.Fatalf("unknown protocol %s", protocol)
 	}
 
-	fmt.Printf("Target domains: %v.\n", targetDomains)
+    if (randomDomain) {
+            fmt.Printf("Target domains: Random Domain.\n")
+        } else {
+            fmt.Printf("Target domains: %v.\n", targetDomains)
+        }
 
 	exit := make(chan struct{})
 	go handleSignals(exit)
@@ -102,7 +109,10 @@ func main() {
 	if runForever {
 		maxMessages = math.MaxInt64
 	}
-	dnsResolver := NewResolver(resolver, targetDomains[0], sdClient, ResolverOptions{
+	if randomDomain {
+		maxMessages = math.MaxInt64
+	}
+	dnsResolver := NewResolver(resolver, targetDomains[0], randomDomain, sdClient, ResolverOptions{
 		Concurrency:       concurrency,
 		MaxMessages:       maxMessages,
 		RequestsPerSecond: reqPerSec,
